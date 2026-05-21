@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Timeline — {{ disk_image.name }}{% endblock %}
+{% block page_title %}Forensic Timeline: {{ disk_image.name }}{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="card mb-3 p-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">File Name</label>
+      <input type="text" name="file_name" class="form-control form-control-sm"
+             value="{{ filters.file_name }}" placeholder="Search file name...">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold">Source</label>
+      <select name="source" class="form-select form-select-sm">
+        <option value="">All Sources</option>
+        {% for val, label in source_choices %}
+        <option value="{{ val }}" {% if filters.source == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold">From Date</label>
+      <input type="datetime-local" name="date_from" class="form-control form-control-sm"
+             value="{{ filters.date_from }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold">To Date</label>
+      <input type="datetime-local" name="date_to" class="form-control form-control-sm"
+             value="{{ filters.date_to }}">
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+        <i class="bi bi-funnel me-1"></i>Filter
+      </button>
+      <a href="{% url 'analysis:timeline' disk_image.pk %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- Chart -->
+<div class="card mb-3 p-3">
+  <div id="timeline-chart" style="height:250px;"></div>
+</div>
+
+<!-- Timeline Table -->
+<div class="card">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <span class="section-title mb-0">
+      <i class="bi bi-clock-history me-1"></i>Timeline Events
+      <span class="badge bg-secondary ms-2">{{ total_entries }}</span>
+    </span>
+    <a href="{% url 'analysis:forgery_results' disk_image.pk %}" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-shield-exclamation me-1"></i>Forgery Results
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Timestamp (UTC)</th>
+          <th>Event Type</th>
+          <th>Source</th>
+          <th>File Name</th>
+          <th>Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in page_obj %}
+        <tr>
+          <td><code>{{ entry.event_time|date:"Y-m-d H:i:s" }}</code></td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ entry.event_type|title }}</span>
+          </td>
+          <td><span class="badge bg-primary">{{ entry.source }}</span></td>
+          <td>{{ entry.file_name|truncatechars:40 }}</td>
+          <td><small class="text-muted">{{ entry.file_path|truncatechars:60 }}</small></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No timeline entries found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm mb-0 justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&file_name={{ filters.file_name }}&source={{ filters.source }}">«</a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&file_name={{ filters.file_name }}&source={{ filters.source }}">»</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Load timeline chart data via AJAX
+  fetch("{% url 'analysis:timeline_chart_data' disk_image.pk %}")
+    .then(r => r.json())
+    .then(data => {
+      const dates = Object.keys(data.timeline_data).sort();
+      const sources = new Set();
+      dates.forEach(d => Object.keys(data.timeline_data[d]).forEach(s => sources.add(s)));
+
+      const traces = Array.from(sources).map(source => ({
+        x: dates,
+        y: dates.map(d => data.timeline_data[d][source] || 0),
+        name: source,
+        type: 'bar',
+      }));
+
+      Plotly.newPlot('timeline-chart', traces, {
+        barmode: 'stack',
+        margin: {t: 20, b: 40, l: 40, r: 20},
+        xaxis: {title: 'Date'},
+        yaxis: {title: 'Events'},
+        legend: {orientation: 'h', y: -0.3},
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+      }, {responsive: true, displayModeBar: false});
+    })
+    .catch(() => {
+      document.getElementById('timeline-chart').innerHTML =
+        '<p class="text-muted text-center pt-4">Chart data not available.</p>';
+    });
+</script>
+{% endblock %}

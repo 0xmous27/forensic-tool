@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}Forgery Results — {{ disk_image.name }}{% endblock %}
+{% block page_title %}Forgery Detection Results: {{ disk_image.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chart-card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); background:#fff; }
+  .chart-card .chart-title {
+    font-size: .82rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: #0f3460; padding: 1rem 1.25rem .25rem;
+    border-bottom: 1px solid #f0f2f5;
+  }
+  .chart-wrap { padding: .75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3">
+      <div class="text-muted small">Total Files</div>
+      <div class="fs-3 fw-bold">{{ total }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3" style="border-left-color:#c0392b">
+      <div class="text-muted small">Forged</div>
+      <div class="fs-3 fw-bold text-danger">{{ forged }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3" style="border-left-color:#e67e22">
+      <div class="text-muted small">Suspicious</div>
+      <div class="fs-3 fw-bold text-warning">{{ suspicious }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card p-3" style="border-left-color:#27ae60">
+      <div class="text-muted small">Genuine</div>
+      <div class="fs-3 fw-bold text-success">{{ genuine }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 1: Classification Summary ── -->
+<h6 class="fw-bold text-secondary mb-3 mt-2"><i class="bi bi-pie-chart-fill me-1 text-primary"></i>Classification Summary</h6>
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="chart-card h-100">
+      <div class="chart-title">Classification Distribution</div>
+      <div class="chart-wrap"><div id="chart-pie" style="height:260px"></div></div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="chart-card h-100">
+      <div class="chart-title">Files per Classification</div>
+      <div class="chart-wrap"><div id="chart-bar" style="height:260px"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 2: Score Distribution ── -->
+<h6 class="fw-bold text-secondary mb-3"><i class="bi bi-bar-chart-fill me-1 text-primary"></i>Score Distribution</h6>
+<div class="row g-3 mb-4">
+  <div class="col-md-8">
+    <div class="chart-card">
+      <div class="chart-title">Forgery Score Histogram</div>
+      <div class="chart-wrap"><div id="chart-hist" style="height:260px"></div></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="chart-card">
+      <div class="chart-title">Top 20 Highest Scores</div>
+      <div class="chart-wrap"><div id="chart-scatter" style="height:260px"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 3: Timeline Analysis ── -->
+<h6 class="fw-bold text-secondary mb-3"><i class="bi bi-clock-history me-1 text-primary"></i>Timeline Analysis</h6>
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="chart-card">
+      <div class="chart-title">Events Over Time (by Classification)</div>
+      <div class="chart-wrap"><div id="chart-timeline" style="height:280px"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 4: Heatmap ── -->
+<h6 class="fw-bold text-secondary mb-3"><i class="bi bi-grid-3x3-gap-fill me-1 text-primary"></i>Activity Heatmap</h6>
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="chart-card">
+      <div class="chart-title">Timestamp Activity — Hour vs Day of Week</div>
+      <div class="chart-wrap"><div id="chart-heatmap" style="height:280px"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Filter + Table ── -->
+<div class="card mb-3 p-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <input type="text" name="file_name" class="form-control form-control-sm"
+             value="{{ filters.file_name }}" placeholder="Filter by file name...">
+    </div>
+    <div class="col-md-3">
+      <select name="classification" class="form-select form-select-sm">
+        <option value="">All Classifications</option>
+        <option value="forged" {% if filters.classification == 'forged' %}selected{% endif %}>Forged</option>
+        <option value="suspicious" {% if filters.classification == 'suspicious' %}selected{% endif %}>Suspicious</option>
+        <option value="genuine" {% if filters.classification == 'genuine' %}selected{% endif %}>Genuine</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+    </div>
+    <div class="col-md-2">
+      <a href="{% url 'analysis:forgery_results' disk_image.pk %}" class="btn btn-outline-secondary btn-sm w-100">Clear</a>
+    </div>
+    <div class="col-md-1">
+      <a href="{% url 'scoring:run_scoring' disk_image.pk %}" class="btn btn-outline-info btn-sm w-100" title="Re-run scoring">
+        <i class="bi bi-arrow-repeat"></i>
+      </a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white py-3">
+    <span class="section-title mb-0"><i class="bi bi-shield-exclamation me-1"></i>File Analysis Results</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>File Name</th>
+          <th>Forgery Score</th>
+          <th>Classification</th>
+          <th>Anomalies</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in page_obj %}
+        <tr>
+          <td>
+            <i class="bi bi-file-earmark text-secondary me-1"></i>
+            {{ result.file_name|truncatechars:50 }}
+            <div class="text-muted" style="font-size:.75rem">{{ result.file_path|truncatechars:60 }}</div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height:8px;width:80px">
+                <div class="progress-bar {% if result.forgery_score > 60 %}bg-danger{% elif result.forgery_score > 30 %}bg-warning{% else %}bg-success{% endif %}"
+                     style="width:{{ result.forgery_score }}%"></div>
+              </div>
+              <span class="fw-semibold">{{ result.forgery_score|floatformat:1 }}</span>
+            </div>
+          </td>
+          <td>
+            {% if result.classification == 'forged' %}<span class="badge bg-danger">FORGED</span>
+            {% elif result.classification == 'suspicious' %}<span class="badge bg-warning text-dark">SUSPICIOUS</span>
+            {% else %}<span class="badge bg-success">GENUINE</span>{% endif %}
+          </td>
+          <td>{% if result.anomalies %}<span class="badge bg-secondary">{{ result.anomalies|length }}</span>{% else %}—{% endif %}</td>
+          <td>
+            <a href="{% url 'analysis:file_detail' disk_image.pk result.pk %}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i> Detail
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            No results yet. <a href="{% url 'analysis:run_analysis' disk_image.pk %}">Run analysis first.</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer bg-white">
+    <nav><ul class="pagination pagination-sm mb-0 justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>
+      {% endif %}
+    </ul></nav>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CHART_URL = "{% url 'analysis:forgery_chart_data' disk_image.pk %}";
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const HOURS = Array.from({length:24}, (_,i) => `${String(i).padStart(2,'0')}:00`);
+
+const cfg = {responsive:true, displayModeBar:false};
+const layout_base = {
+  margin:{t:10,b:50,l:50,r:20},
+  paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+  font:{family:'Segoe UI,sans-serif', size:11, color:'#555'},
+};
+
+fetch(CHART_URL).then(r=>r.json()).then(d => {
+
+  // 1. Pie
+  Plotly.newPlot('chart-pie', [{
+    type:'pie',
+    labels:['Genuine','Suspicious','Forged'],
+    values:[d.classification.genuine, d.classification.suspicious, d.classification.forged],
+    marker:{colors:['#27ae60','#e67e22','#c0392b']},
+    hole:.45,
+    textinfo:'label+percent',
+    hovertemplate:'%{label}: %{value} files<extra></extra>',
+  }], {...layout_base, margin:{t:10,b:10,l:10,r:10}, showlegend:true,
+    legend:{orientation:'h',y:-0.1}}, cfg);
+
+  // 2. Bar
+  Plotly.newPlot('chart-bar', [{
+    type:'bar',
+    x:['Genuine','Suspicious','Forged'],
+    y:[d.classification.genuine, d.classification.suspicious, d.classification.forged],
+    marker:{color:['#27ae60','#e67e22','#c0392b']},
+    hovertemplate:'%{x}: %{y} files<extra></extra>',
+  }], {...layout_base, xaxis:{title:'Classification'}, yaxis:{title:'File Count'}}, cfg);
+
+  // 3. Histogram (score buckets)
+  const labels = ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'];
+  const colors = d.score_buckets.map((_,i) =>
+    i>=8?'#c0392b': i>=6?'#e67e22': i>=3?'#f39c12':'#27ae60');
+  Plotly.newPlot('chart-hist', [{
+    type:'bar', x:labels, y:d.score_buckets,
+    marker:{color:colors},
+    hovertemplate:'Score %{x}: %{y} files<extra></extra>',
+  }], {...layout_base, xaxis:{title:'Forgery Score Range'}, yaxis:{title:'File Count'},
+    bargap:0.1}, cfg);
+
+  // 4. Scatter — top 20 scores
+  const sc = d.top_scores;
+  const scColors = sc.map(r=>r.classification==='forged'?'#c0392b':r.classification==='suspicious'?'#e67e22':'#27ae60');
+  Plotly.newPlot('chart-scatter', [{
+    type:'bar', orientation:'h',
+    x: sc.map(r=>r.forgery_score),
+    y: sc.map(r=>r.file_name.length>20?r.file_name.slice(0,20)+'…':r.file_name),
+    marker:{color:scColors},
+    hovertemplate:'%{y}<br>Score: %{x:.1f}<extra></extra>',
+  }], {...layout_base, margin:{t:10,b:30,l:130,r:20},
+    xaxis:{title:'Score',range:[0,100]}, yaxis:{automargin:true}}, cfg);
+
+  // 5. Timeline stacked bar
+  if(d.timeline.days.length) {
+    Plotly.newPlot('chart-timeline', [
+      {type:'bar', name:'Genuine',    x:d.timeline.days, y:d.timeline.genuine,    marker:{color:'#27ae60'}},
+      {type:'bar', name:'Suspicious', x:d.timeline.days, y:d.timeline.suspicious, marker:{color:'#e67e22'}},
+      {type:'bar', name:'Forged',     x:d.timeline.days, y:d.timeline.forged,     marker:{color:'#c0392b'}},
+    ], {...layout_base, barmode:'stack',
+      xaxis:{title:'Date'}, yaxis:{title:'Events'},
+      legend:{orientation:'h',y:-0.25}}, cfg);
+  } else {
+    document.getElementById('chart-timeline').innerHTML =
+      '<p class="text-muted text-center pt-5 small">No timeline data available.</p>';
+  }
+
+  // 6. Heatmap
+  Plotly.newPlot('chart-heatmap', [{
+    type:'heatmap',
+    z: d.heatmap,
+    x: HOURS,
+    y: DAYS,
+    colorscale:[
+      [0,'#f0f2f5'],[0.2,'#cfe2ff'],[0.5,'#e67e22'],[0.8,'#c0392b'],[1,'#7b0000']
+    ],
+    hovertemplate:'%{y} %{x}<br>Events: %{z}<extra></extra>',
+    showscale:true,
+  }], {...layout_base, margin:{t:10,b:60,l:50,r:60},
+    xaxis:{title:'Hour of Day', tickangle:-45},
+    yaxis:{title:'Day of Week'}}, cfg);
+
+}).catch(()=>{
+  ['chart-pie','chart-bar','chart-hist','chart-scatter','chart-timeline','chart-heatmap']
+    .forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.innerHTML='<p class="text-muted text-center pt-4 small">No data available.</p>';
+    });
+});
+</script>
+{% endblock %}

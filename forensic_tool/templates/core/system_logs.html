@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}System Logs{% endblock %}
+{% block page_title %}System Logs{% endblock %}
+
+{% block extra_css %}
+<style>
+  .log-row-ERROR, .log-row-CRITICAL { background: rgba(192,57,43,0.08); }
+  .log-row-WARNING { background: rgba(230,126,34,0.08); }
+  .log-row-INFO { background: transparent; }
+  .badge-ERROR, .badge-CRITICAL { background: #c0392b; }
+  .badge-WARNING { background: #e67e22; }
+  .badge-INFO { background: #2980b9; }
+  .badge-DEBUG { background: #555; }
+  .log-msg { font-family: monospace; font-size: 0.82rem; word-break: break-all; }
+  .filter-bar { background: #fff; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="filter-bar d-flex align-items-center gap-3 flex-wrap">
+  <span class="fw-semibold text-secondary small">Filter by level:</span>
+  <a href="{% url 'core:system_logs' %}" class="btn btn-sm {% if not level_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+  {% for lvl in levels %}
+  <a href="?level={{ lvl }}" class="btn btn-sm {% if level_filter == lvl %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ lvl }}</a>
+  {% endfor %}
+  <span class="ms-auto text-muted small">Showing {{ logs|length }} entries</span>
+</div>
+
+<div class="card">
+  <div class="card-header bg-dark text-white py-2 d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-journal-text me-1"></i>System Event Log</span>
+    <small class="text-muted">Most recent first</small>
+  </div>
+  <div class="card-body p-0">
+    {% if logs %}
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:160px">Timestamp</th>
+            <th style="width:90px">Level</th>
+            <th style="width:120px">Module</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr class="log-row-{{ log.level }}">
+            <td class="text-muted small font-monospace">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+            <td><span class="badge badge-{{ log.level }}">{{ log.level }}</span></td>
+            <td class="text-muted small">{{ log.module }}</td>
+            <td class="log-msg">{{ log.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-check-circle fs-2 d-block mb-2"></i>No log entries found.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

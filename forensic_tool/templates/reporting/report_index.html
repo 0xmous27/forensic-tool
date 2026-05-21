@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Generate Report — {{ disk_image.name }}{% endblock %}
+{% block page_title %}Generate Forensic Report{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card p-4">
+      <h5 class="fw-bold mb-1"><i class="bi bi-file-earmark-text text-primary me-2"></i>Forensic Report</h5>
+      <p class="text-muted small mb-3">Case: <strong>{{ disk_image.name }}</strong></p>
+      <hr>
+
+      <div class="row g-3">
+        <!-- PDF Report -->
+        <div class="col-md-6">
+          <div class="card border-danger p-3 text-center h-100">
+            <i class="bi bi-file-pdf text-danger fs-1 mb-2"></i>
+            <h6 class="fw-bold">PDF Report</h6>
+            <p class="text-muted small">Structured forensic report with timeline, anomalies, scores, and verdict.</p>
+            <a href="{% url 'reporting:download_pdf' disk_image.pk %}" class="btn btn-danger mt-auto">
+              <i class="bi bi-download me-1"></i>Download PDF
+            </a>
+          </div>
+        </div>
+
+        <!-- HTML Report -->
+        <div class="col-md-6">
+          <div class="card border-primary p-3 text-center h-100">
+            <i class="bi bi-file-code text-primary fs-1 mb-2"></i>
+            <h6 class="fw-bold">HTML Report</h6>
+            <p class="text-muted small">Interactive HTML report viewable in any browser.</p>
+            <div class="d-flex gap-2 mt-auto justify-content-center">
+              <a href="{% url 'reporting:view_html' disk_image.pk %}" class="btn btn-primary" target="_blank">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+              <a href="{% url 'reporting:download_html' disk_image.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-download me-1"></i>Download
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-3 mb-0 small">
+        <i class="bi bi-info-circle me-1"></i>
+        Reports include: case metadata, SHA-256 hash, timeline reconstruction, detected anomalies,
+        evidence scores, file classifications, and final forensic verdict.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

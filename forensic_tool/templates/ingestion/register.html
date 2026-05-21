@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Register Disk Image{% endblock %}
+{% block page_title %}Register Disk Image{% endblock %}
+
+{% block extra_css %}
+<style>
+  .path-display {
+    font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px;
+    background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px;
+    padding: 7px 12px; flex: 1; word-break: break-all;
+    min-height: 36px; display: flex; align-items: center; color: #24292f;
+  }
+  .path-display.empty { color: #8c959f; font-style: italic; }
+  .algo-card {
+    border: 1px solid #d0d7de; border-radius: 8px; padding: 10px 14px;
+    cursor: pointer; transition: border-color .15s, background .15s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .algo-card:hover { border-color: #0969da; background: #f6f8fa; }
+  .algo-card.selected { border-color: #0969da; background: #ddf4ff; }
+  .algo-card input { display: none; }
+  .algo-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .browser-entry { cursor: pointer; padding: 7px 10px; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .browser-entry:hover { background: #f6f8fa; }
+  .browser-entry.is-image { font-weight: 600; color: #0969da; }
+  .browser-entry.is-image:hover { background: #ddf4ff; }
+  #browser-list { max-height: 380px; overflow-y: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+
+    <div class="card mb-3">
+      <div class="card-body d-flex align-items-center gap-3" style="padding:16px 20px">
+        <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0f3460,#1a4a8a);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="bi bi-hdd-fill" style="color:#58a6ff;font-size:20px"></i>
+        </div>
+        <div>
+          <div class="fw-bold" style="font-size:15px">Register NTFS Disk Image</div>
+          <div class="text-muted" style="font-size:12px">Browse to locate the image. It will be opened <strong>read-only</strong> — never copied or modified.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="padding:24px">
+        <form method="post" id="register-form">
+          {% csrf_token %}
+
+          <!-- File path -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:13px">Disk Image File <span class="text-danger">*</span></label>
+            <div class="d-flex gap-2 align-items-center">
+              <div class="path-display empty flex-grow-1" id="path-display">No file selected — click Browse</div>
+              <button type="button" class="btn btn-outline-primary btn-sm flex-shrink-0"
+                      data-bs-toggle="modal" data-bs-target="#fileBrowserModal">
+                <i class="bi bi-folder2-open me-1"></i>Browse...
+              </button>
+            </div>
+            <input type="hidden" name="image_path" id="image_path_input">
+            <div class="mt-1" style="font-size:11px;color:#57606a">Supported: {{ allowed|join:", " }}</div>
+          </div>
+
+          <!-- Hash algorithm -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:13px">Hash Algorithm</label>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="algo-card selected" id="card-sha256">
+                  <input type="radio" name="hash_algorithm" value="sha256" checked onchange="selectAlgo('sha256')">
+                  <div class="algo-icon" style="background:#dafbe1;color:#1a7f37"><i class="bi bi-shield-check"></i></div>
+                  <div><div style="font-size:13px;font-weight:600">SHA-256</div><div style="font-size:10px;color:#57606a">Recommended</div></div>
+                </label>
+              </div>
+              <div class="col-4">
+                <label class="algo-card" id="card-sha1">
+                  <input type="radio" name="hash_algorithm" value="sha1" onchange="selectAlgo('sha1')">
+                  <div class="algo-icon" style="background:#fff8c5;color:#9a6700"><i class="bi bi-shield"></i></div>
+                  <div><div style="font-size:13px;font-weight:600">SHA-1</div><div style="font-size:10px;color:#57606a">Legacy</div></div>
+                </label>
+              </div>
+              <div class="col-4">
+                <label class="algo-card" id="card-md5">
+                  <input type="radio" name="hash_algorithm" value="md5" onchange="selectAlgo('md5')">
+                  <div class="algo-icon" style="background:#ffebe9;color:#cf222e"><i class="bi bi-shield-slash"></i></div>
+                  <div><div style="font-size:13px;font-weight:600">MD5</div><div style="font-size:10px;color:#57606a">Weak</div></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Expected hash -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:13px" for="expected_hash">
+              Expected Hash Value <span class="text-danger">*</span>
+            </label>
+            <input type="text" name="expected_hash" id="expected_hash"
+                   class="form-control font-monospace" style="font-size:12px"
+                   placeholder="Paste the known hash from your chain of custody document"
+                   autocomplete="off" required>
+            <div class="mt-1 d-flex align-items-center gap-1" style="font-size:11px;color:#57606a">
+              <i class="bi bi-shield-lock text-warning"></i>
+              The tool computes the hash and compares it. A mismatch rejects the image.
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-check2-circle me-2"></i>Register &amp; Verify Integrity
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mt-3" style="background:#f6f8fa;border-color:#e1e4e8">
+      <div class="card-body" style="padding:14px 18px">
+        <div class="fw-semibold mb-2" style="font-size:13px"><i class="bi bi-info-circle text-primary me-1"></i>Evidence Integrity Guarantee</div>
+        <ul class="mb-0" style="font-size:12px;color:#57606a;padding-left:18px">
+          <li>The original disk image is opened <strong>read-only</strong> — never copied or modified.</li>
+          <li>Hash is computed and compared against your expected value before any analysis.</li>
+          <li>Only extracted artifacts (timestamps, metadata) are stored in the database.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- File Browser Modal -->
+<div class="modal fade" id="fileBrowserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:10px;overflow:hidden">
+      <div class="modal-header" style="background:#f6f8fa;border-bottom:1px solid #e1e4e8">
+        <h5 class="modal-title fw-bold" style="font-size:14px">
+          <i class="bi bi-folder2-open me-2 text-primary"></i>Browse Server Filesystem
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div style="background:#f6f8fa;border-bottom:1px solid #e1e4e8;padding:10px 16px">
+          <nav><ol class="breadcrumb mb-0" id="breadcrumb-nav" style="font-size:12px"></ol></nav>
+        </div>
+        <div id="browser-loading" class="text-center py-5 d-none">
+          <div class="spinner-border text-primary" style="width:24px;height:24px"></div>
+          <div class="text-muted mt-2" style="font-size:12px">Loading...</div>
+        </div>
+        <div id="browser-error" class="alert alert-danger mx-3 mt-3 d-none" style="font-size:12px"></div>
+        <div id="browser-list" class="px-2 py-1"></div>
+      </div>
+      <div class="modal-footer" style="background:#f6f8fa;border-top:1px solid #e1e4e8">
+        <span class="text-muted me-auto" style="font-size:11px">
+          <i class="bi bi-info-circle me-1"></i>
+          Click a <span style="color:#0969da;font-weight:600">highlighted file</span> to select. Click a folder to open.
+        </span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const browseUrl = "{% url 'ingestion:browse' %}";
+  let currentPath = '/home';
+
+  function formatSize(b) {
+    if (!b) return '';
+    if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
+    if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
+    return (b / 1024).toFixed(0) + ' KB';
+  }
+
+  function loadPath(path) {
+    const list = document.getElementById('browser-list');
+    const loading = document.getElementById('browser-loading');
+    const error = document.getElementById('browser-error');
+    const breadcrumb = document.getElementById('breadcrumb-nav');
+    list.innerHTML = ''; error.classList.add('d-none'); loading.classList.remove('d-none');
+
+    fetch(browseUrl + '?path=' + encodeURIComponent(path))
+      .then(r => r.json())
+      .then(data => {
+        loading.classList.add('d-none');
+        if (data.error) { error.textContent = data.error; error.classList.remove('d-none'); return; }
+        currentPath = data.current_path;
+
+        breadcrumb.innerHTML = data.breadcrumbs.map((c, i) => {
+          const last = i === data.breadcrumbs.length - 1;
+          return last
+            ? `<li class="breadcrumb-item active">${c.name}</li>`
+            : `<li class="breadcrumb-item"><a href="#" class="text-decoration-none" onclick="event.preventDefault();window._loadPath('${c.path}')">${c.name}</a></li>`;
+        }).join('');
+
+        if (!data.entries.length) {
+          list.innerHTML = '<div class="text-muted text-center py-4" style="font-size:12px">No disk images or folders found here.</div>';
+          return;
+        }
+        data.entries.forEach(e => {
+          const div = document.createElement('div');
+          div.className = 'browser-entry' + (e.is_image ? ' is-image' : '');
+          const icon = e.is_dir
+            ? '<i class="bi bi-folder-fill" style="color:#d29922;font-size:15px"></i>'
+            : '<i class="bi bi-hdd-fill" style="color:#0969da;font-size:15px"></i>';
+          const size = e.is_image && e.size ? `<span class="ms-auto text-muted" style="font-size:11px">${formatSize(e.size)}</span>` : '';
+          div.innerHTML = `${icon}<span>${e.name}</span>${size}`;
+          if (e.is_dir) div.onclick = () => loadPath(e.path);
+          else if (e.is_image) div.onclick = () => selectFile(e.path);
+          list.appendChild(div);
+        });
+      })
+      .catch(() => { loading.classList.add('d-none'); error.textContent = 'Failed to load directory.'; error.classList.remove('d-none'); });
+  }
+
+  window._loadPath = loadPath;
+
+  function selectFile(path) {
+    document.getElementById('image_path_input').value = path;
+    const d = document.getElementById('path-display');
+    d.textContent = path; d.classList.remove('empty');
+    bootstrap.Modal.getInstance(document.getElementById('fileBrowserModal')).hide();
+  }
+
+  document.getElementById('fileBrowserModal').addEventListener('show.bs.modal', () => loadPath(currentPath));
+  document.getElementById('register-form').addEventListener('submit', function (e) {
+    if (!document.getElementById('image_path_input').value.trim()) {
+      e.preventDefault(); alert('Please browse and select a disk image file first.');
+    }
+  });
+})();
+
+function selectAlgo(algo) {
+  ['sha256', 'sha1', 'md5'].forEach(a =>
+    document.getElementById('card-' + a).classList.toggle('selected', a === algo));
+}
+</script>
+{% endblock %}

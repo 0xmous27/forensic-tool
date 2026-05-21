@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | ForensicTool</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      height: 100vh; overflow: hidden;
+      display: flex;
+      background: #0a0e1a;
+    }
+
+    /* ── LEFT: Carousel ── */
+    .carousel-side {
+      flex: 0 0 60%;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide {
+      position: absolute; inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    .slide.active { opacity: 1; }
+    .slide::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(10,14,26,.75) 0%, rgba(15,52,96,.55) 100%);
+    }
+    .slide-1 { background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1400&q=80'); }
+    .slide-2 { background-image: url('https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1400&q=80'); }
+    .slide-3 { background-image: url('https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=1400&q=80'); }
+    .slide-4 { background-image: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1400&q=80'); }
+
+    .carousel-overlay {
+      position: absolute; inset: 0; z-index: 10;
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      padding: 3rem;
+    }
+    .carousel-overlay .brand-tag {
+      font-size: .75rem; font-weight: 600; letter-spacing: .15em;
+      color: #4a9eff; text-transform: uppercase; margin-bottom: .75rem;
+    }
+    .carousel-overlay h1 {
+      font-size: 2.6rem; font-weight: 800; color: #fff; line-height: 1.15;
+      text-shadow: 0 2px 20px rgba(0,0,0,.4);
+    }
+    .carousel-overlay p {
+      margin-top: .75rem; font-size: 1rem; color: rgba(255,255,255,.7);
+      letter-spacing: .05em;
+    }
+    .dots {
+      display: flex; gap: 8px; margin-top: 1.5rem;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,.35); cursor: pointer;
+      transition: all .3s;
+    }
+    .dot.active { background: #4a9eff; width: 24px; border-radius: 4px; }
+
+    /* ── RIGHT: Form ── */
+    .form-side {
+      flex: 0 0 40%;
+      background: #0f1117;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+      animation: fadeIn .8s ease both;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+    .form-box { width: 100%; max-width: 360px; }
+
+    .logo-wrap {
+      text-align: center; margin-bottom: 2rem;
+    }
+    .logo-wrap .icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: linear-gradient(135deg, #0f3460, #1a4a8a);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; color: #4a9eff; margin-bottom: .75rem;
+      box-shadow: 0 4px 20px rgba(74,158,255,.25);
+    }
+    .logo-wrap h2 { color: #fff; font-size: 1.5rem; font-weight: 700; }
+    .logo-wrap p { color: #6c7086; font-size: .85rem; margin-top: .25rem; }
+
+    .form-label { color: #a6adc8; font-size: .82rem; margin-bottom: .4rem; display: block; }
+
+    .input-wrap { position: relative; margin-bottom: 1.1rem; }
+    .input-wrap input {
+      width: 100%; padding: .7rem 1rem;
+      background: #16213e; border: 1px solid #1e3a5f;
+      border-radius: 10px; color: #cdd6f4; font-size: .92rem;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .input-wrap input:focus {
+      border-color: #4a9eff;
+      box-shadow: 0 0 0 3px rgba(74,158,255,.15);
+    }
+    .input-wrap .toggle-pw {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: #6c7086; cursor: pointer; font-size: 1rem;
+      background: none; border: none; padding: 0;
+    }
+    .input-wrap .toggle-pw:hover { color: #4a9eff; }
+
+    .btn-login {
+      width: 100%; padding: .75rem;
+      background: linear-gradient(135deg, #0f3460, #1a4a8a);
+      border: none; border-radius: 10px;
+      color: #fff; font-size: .95rem; font-weight: 600;
+      cursor: pointer; transition: transform .15s, box-shadow .15s;
+      margin-top: .5rem;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(74,158,255,.35);
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    .alert-err {
+      background: rgba(192,57,43,.15); border: 1px solid #c0392b;
+      color: #e74c3c; border-radius: 8px; padding: .6rem .9rem;
+      font-size: .83rem; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .footer-note {
+      text-align: center; margin-top: 1.5rem;
+      color: #4a5568; font-size: .72rem; line-height: 1.6;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      body { flex-direction: column; overflow: auto; }
+      .carousel-side { flex: 0 0 220px; }
+      .form-side { flex: 1; }
+      .carousel-overlay h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LEFT: Carousel -->
+<div class="carousel-side">
+  <div class="slide slide-1 active"></div>
+  <div class="slide slide-2"></div>
+  <div class="slide slide-3"></div>
+  <div class="slide slide-4"></div>
+
+  <div class="carousel-overlay">
+    <div class="brand-tag"><i class="bi bi-shield-lock-fill"></i> &nbsp;ForensicTool</div>
+    <h1>Digital Forensic<br>Investigation Tool</h1>
+    <p>Fast &bull; Accurate &bull; Reliable</p>
+    <div class="dots">
+      <div class="dot active" onclick="goTo(0)"></div>
+      <div class="dot" onclick="goTo(1)"></div>
+      <div class="dot" onclick="goTo(2)"></div>
+      <div class="dot" onclick="goTo(3)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RIGHT: Login Form -->
+<div class="form-side">
+  <div class="form-box">
+    <div class="logo-wrap">
+      <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+      <h2>Welcome Back</h2>
+      <p>Sign in to continue to ForensicTool</p>
+    </div>
+
+    {% if error %}
+    <div class="alert-err"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+    {% endif %}
+    {% if form.errors %}
+    <div class="alert-err"><i class="bi bi-exclamation-triangle-fill"></i> Invalid credentials. Please try again.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <label class="form-label">Username</label>
+      <div class="input-wrap">
+        <input type="text" name="username" placeholder="Enter your username" autofocus required>
+      </div>
+
+      <label class="form-label">Password</label>
+      <div class="input-wrap">
+        <input type="password" name="password" id="pw" placeholder="Enter your password" required>
+        <button type="button" class="toggle-pw" onclick="togglePw()" id="pw-icon">
+          <i class="bi bi-eye"></i>
+        </button>
+      </div>
+
+      <button type="submit" class="btn-login">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+      </button>
+    </form>
+
+    <div class="footer-note">
+      No self-registration &mdash; contact your administrator for access.<br>
+      University of Dodoma &mdash; Group 15 FYP
+    </div>
+  </div>
+</div>
+
+<script>
+  // Carousel
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.dot');
+  let current = 0, timer;
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    clearInterval(timer);
+    timer = setInterval(next, 5000);
+  }
+
+  function next() { goTo((current + 1) % slides.length); }
+  timer = setInterval(next, 5000);
+
+  // Password toggle
+  function togglePw() {
+    const pw = document.getElementById('pw');
+    const icon = document.querySelector('#pw-icon i');
+    if (pw.type === 'password') {
+      pw.type = 'text';
+      icon.className = 'bi bi-eye-slash';
+    } else {
+      pw.type = 'password';
+      icon.className = 'bi bi-eye';
+    }
+  }
+</script>
+</body>
+</html>

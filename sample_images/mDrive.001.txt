@@ -1,0 +1,39 @@
+﻿Created By AccessData® FTK® Imager 4.5.0.3 
+
+Case Information: 
+Acquired using: ADI4.5.0.3
+Case Number: new
+Evidence Number: new
+Unique description: new
+Examiner: mimi
+Notes: new
+
+--------------------------------------------------------------
+
+Information for C:\Users\altum\image\mDrive:
+
+Physical Evidentiary Item (Source) Information:
+[Device Info]
+ Source Type: Logical
+[Drive Geometry]
+ Bytes per Sector: 512
+ Sector Count: 102,400
+[Physical Drive Information]
+ Removable drive: False
+ Source data size: 50 MB
+ Sector count:    102400
+[Computed Hashes]
+ MD5 checksum:    9562323923a84f346bb3d3d8542f51f8
+ SHA1 checksum:   470fb0d23803a3774171a4ad71e8232e5ab49bf0
+
+Image Information:
+ Acquisition started:   Fri Apr 17 18:08:25 2026
+ Acquisition finished:  Fri Apr 17 18:08:26 2026
+ Segment list:
+  C:\Users\altum\image\mDrive.001
+
+Image Verification Results:
+ Verification started:  Fri Apr 17 18:08:26 2026
+ Verification finished: Fri Apr 17 18:08:27 2026
+ MD5 checksum:    9562323923a84f346bb3d3d8542f51f8 : verified
+ SHA1 checksum:   470fb0d23803a3774171a4ad71e8232e5ab49bf0 : verified

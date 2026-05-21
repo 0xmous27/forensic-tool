@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ForensicTool{% endblock %} — NTFS Forgery Detector</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --sidebar-bg: #0d1117;
+      --sidebar-border: rgba(255,255,255,.07);
+      --sidebar-text: #8b949e;
+      --sidebar-active-bg: rgba(88,166,255,.12);
+      --sidebar-active-text: #58a6ff;
+      --sidebar-hover-bg: rgba(255,255,255,.05);
+      --sidebar-width: 248px;
+      --topbar-h: 56px;
+      --accent: #58a6ff;
+      --accent-dark: #0f3460;
+      --danger: #f85149;
+      --warning: #d29922;
+      --success: #3fb950;
+      --body-bg: #f6f8fa;
+      --card-bg: #ffffff;
+      --card-border: #e1e4e8;
+      --text-primary: #24292f;
+      --text-muted: #57606a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--body-bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text-primary); font-size: 14px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      display: flex; flex-direction: column;
+      z-index: 200; overflow-y: auto;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 16px 14px;
+      border-bottom: 1px solid var(--sidebar-border);
+      text-decoration: none;
+    }
+    .sidebar-brand .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, #0f3460, #1a4a8a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: var(--accent); flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(88,166,255,.2);
+    }
+    .sidebar-brand .brand-text { line-height: 1.2; }
+    .sidebar-brand .brand-name { color: #e6edf3; font-size: 14px; font-weight: 700; }
+    .sidebar-brand .brand-sub { color: var(--sidebar-text); font-size: 10px; letter-spacing: .04em; }
+
+    .nav-section-label {
+      padding: 16px 16px 4px;
+      font-size: 10px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: #484f58;
+    }
+    .sidebar-nav { list-style: none; padding: 0 8px; margin: 0; }
+    .sidebar-nav li { margin: 1px 0; }
+    .sidebar-nav a {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 10px; border-radius: 6px;
+      color: var(--sidebar-text); text-decoration: none;
+      font-size: 13px; font-weight: 500;
+      transition: background .15s, color .15s;
+    }
+    .sidebar-nav a i { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+    .sidebar-nav a:hover { background: var(--sidebar-hover-bg); color: #e6edf3; }
+    .sidebar-nav a.active {
+      background: var(--sidebar-active-bg); color: var(--sidebar-active-text);
+    }
+    .sidebar-nav a.active i { color: var(--sidebar-active-text); }
+
+    .sidebar-divider { border-color: var(--sidebar-border); margin: 8px 16px; }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 12px 16px;
+      border-top: 1px solid var(--sidebar-border);
+    }
+    .sidebar-footer .user-info {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-footer .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #0f3460, #1a4a8a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: var(--accent); font-weight: 700; flex-shrink: 0;
+    }
+    .sidebar-footer .uname { color: #e6edf3; font-size: 12px; font-weight: 600; }
+    .sidebar-footer .urole { color: var(--sidebar-text); font-size: 10px; }
+    .sidebar-footer .logout-btn {
+      background: none; border: none; padding: 0;
+      color: #6e7681; font-size: 11px; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 6px; transition: color .15s;
+    }
+    .sidebar-footer .logout-btn:hover { color: var(--danger); }
+
+    /* ── Main layout ── */
+    .main-wrap { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: var(--topbar-h); background: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 8px; }
+    .topbar-breadcrumb { font-size: 13px; color: var(--text-muted); }
+    .topbar-breadcrumb .page-name { color: var(--text-primary); font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-badge {
+      font-size: 11px; padding: 3px 8px; border-radius: 20px;
+      background: rgba(88,166,255,.1); color: var(--accent);
+      border: 1px solid rgba(88,166,255,.2); font-weight: 500;
+    }
+
+    /* ── Page content ── */
+    .page-content { padding: 24px; flex: 1; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card-header {
+      background: var(--card-bg) !important;
+      border-bottom: 1px solid var(--card-border);
+      border-radius: 8px 8px 0 0 !important;
+      padding: 14px 18px;
+    }
+    .card-footer {
+      background: #f6f8fa !important;
+      border-top: 1px solid var(--card-border);
+      border-radius: 0 0 8px 8px !important;
+    }
+
+    /* ── Stat cards ── */
+    .stat-card {
+      border: 1px solid var(--card-border) !important;
+      border-radius: 8px; background: var(--card-bg);
+      padding: 18px 20px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .stat-card .stat-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .stat-card .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; line-height: 1.1; color: var(--text-primary); }
+    .stat-card .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Tables ── */
+    .table { font-size: 13px; }
+    .table th {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--text-muted);
+      background: #f6f8fa; border-bottom: 1px solid var(--card-border) !important;
+      padding: 10px 14px;
+    }
+    .table td { padding: 11px 14px; vertical-align: middle; border-color: #f0f2f4; }
+    .table-hover tbody tr:hover { background: #f6f8fa; }
+
+    /* ── Badges ── */
+    .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+
+    /* ── Buttons ── */
+    .btn { font-size: 13px; font-weight: 500; border-radius: 6px; }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent-dark); }
+    .btn-primary:hover { background: #0a2540; border-color: #0a2540; }
+    .btn-sm { font-size: 12px; padding: 4px 10px; }
+
+    /* ── Workflow steps ── */
+    .step-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid #f0f2f4;
+    }
+    .step-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .step-num {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+    .step-num.done { background: #dafbe1; color: #1a7f37; }
+    .step-num.active { background: #ddf4ff; color: #0969da; }
+    .step-num.pending { background: #f6f8fa; color: #8c959f; border: 1px solid #d0d7de; }
+    .step-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .step-desc { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+    /* ── Alerts ── */
+    .alert { border-radius: 8px; font-size: 13px; }
+    .alert-success { background: #dafbe1; border-color: #aceebb; color: #1a7f37; }
+    .alert-danger  { background: #ffebe9; border-color: #ffcecb; color: #cf222e; }
+    .alert-warning { background: #fff8c5; border-color: #f0d000; color: #9a6700; }
+    .alert-info    { background: #ddf4ff; border-color: #80ccff; color: #0969da; }
+
+    /* ── Section heading ── */
+    .section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+    /* ── Misc ── */
+    code, .font-monospace { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; }
+    .text-muted { color: var(--text-muted) !important; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <a class="sidebar-brand" href="{% url 'core:dashboard' %}">
+    <div class="brand-icon"><i class="bi bi-shield-lock-fill"></i></div>
+    <div class="brand-text">
+      <div class="brand-name">ForensicTool</div>
+      <div class="brand-sub">NTFS Forgery Detector</div>
+    </div>
+  </a>
+
+  <div class="nav-section-label">Workspace</div>
+  <ul class="sidebar-nav">
+    <li>
+      <a href="{% url 'core:dashboard' %}"
+         class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'ingestion:image_list' %}"
+         class="{% if request.resolver_match.url_name == 'image_list' %}active{% endif %}">
+        <i class="bi bi-hdd-stack"></i> Disk Images
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'ingestion:register' %}"
+         class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}">
+        <i class="bi bi-plus-circle"></i> Register Image
+      </a>
+    </li>
+  </ul>
+
+  <div class="nav-section-label">Analysis</div>
+  <ul class="sidebar-nav">
+    {% if current_image_pk %}
+    <li>
+      <a href="{% url 'analysis:timeline' current_image_pk %}"
+         class="{% if request.resolver_match.url_name == 'timeline' %}active{% endif %}">
+        <i class="bi bi-clock-history"></i> Timeline
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'analysis:forgery_results' current_image_pk %}"
+         class="{% if request.resolver_match.url_name == 'forgery_results' %}active{% endif %}">
+        <i class="bi bi-shield-exclamation"></i> Forgery Results
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'scoring:summary' current_image_pk %}"
+         class="{% if request.resolver_match.url_name == 'summary' %}active{% endif %}">
+        <i class="bi bi-graph-up"></i> Scoring Summary
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'reporting:report_index' current_image_pk %}"
+         class="{% if request.resolver_match.url_name == 'report_index' %}active{% endif %}">
+        <i class="bi bi-file-earmark-text"></i> Reports
+      </a>
+    </li>
+    {% else %}
+    <li><a href="{% url 'ingestion:image_list' %}"><i class="bi bi-clock-history"></i> Timeline</a></li>
+    <li><a href="{% url 'ingestion:image_list' %}"><i class="bi bi-shield-exclamation"></i> Forgery Results</a></li>
+    <li><a href="{% url 'ingestion:image_list' %}"><i class="bi bi-graph-up"></i> Scoring Summary</a></li>
+    <li><a href="{% url 'ingestion:image_list' %}"><i class="bi bi-file-earmark-text"></i> Reports</a></li>
+    {% endif %}
+  </ul>
+
+  {% if user.is_staff or user.is_superuser %}
+  <div class="nav-section-label">Administration</div>
+  <ul class="sidebar-nav">
+    <li>
+      <a href="{% url 'admin_dashboard' %}">
+        <i class="bi bi-shield-fill-check" style="color:#f85149"></i> Admin Panel
+      </a>
+    </li>
+  </ul>
+  {% endif %}
+
+  <div class="nav-section-label">Help</div>
+  <ul class="sidebar-nav">
+    <li>
+      <a href="{% url 'core:about' %}"
+         class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+        <i class="bi bi-info-circle"></i> About
+      </a>
+    </li>
+  </ul>
+
+  <div class="sidebar-footer">
+    {% if user.is_authenticated %}
+    <div class="user-info">
+      <div class="avatar">{{ user.username|first|upper }}</div>
+      <div>
+        <div class="uname">{{ user.username }}
+          {% if user.is_superuser %}<span class="badge bg-danger ms-1" style="font-size:9px">ADMIN</span>
+          {% elif user.is_staff %}<span class="badge bg-warning text-dark ms-1" style="font-size:9px">STAFF</span>{% endif %}
+        </div>
+        <div class="urole">
+          {% if user.is_superuser %}Administrator
+          {% elif user.is_staff %}Staff
+          {% else %}{% if user.profile.investigator_id %}{{ user.profile.investigator_id }}{% else %}Investigator{% endif %}{% endif %}
+        </div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button class="logout-btn"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+    </form>
+    {% endif %}
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main-wrap">
+  <header class="topbar">
+    <div class="topbar-left">
+      <i class="bi bi-chevron-right text-muted" style="font-size:11px"></i>
+      <span class="topbar-breadcrumb page-name">{% block page_title %}Dashboard{% endblock %}</span>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-badge"><i class="bi bi-shield-check me-1"></i>Read-only processing</span>
+      <span class="text-muted" style="font-size:11px">UDOM · Group 15</span>
+    </div>
+  </header>
+
+  <div class="page-content">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mb-3" role="alert">
+          {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>
+          {% elif message.tags == 'error' or message.tags == 'danger' %}<i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-circle-fill me-2"></i>
+          {% else %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="stat-icon" style="background:#ddf4ff; color:#0969da"><i class="bi bi-hdd-stack"></i></div>
+      <div>
+        <div class="stat-label">Total Images</div>
+        <div class="stat-value">{{ total_images }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="stat-icon" style="background:#dafbe1; color:#1a7f37"><i class="bi bi-check-circle-fill"></i></div>
+      <div>
+        <div class="stat-label">Completed</div>
+        <div class="stat-value" style="color:#1a7f37">{{ completed }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="stat-icon" style="background:#ffebe9; color:#cf222e"><i class="bi bi-shield-x"></i></div>
+      <div>
+        <div class="stat-label">Forged Files</div>
+        <div class="stat-value" style="color:#cf222e">{{ forged_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card d-flex align-items-center gap-3">
+      <div class="stat-icon" style="background:#fff8c5; color:#9a6700"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div>
+        <div class="stat-label">Suspicious</div>
+        <div class="stat-value" style="color:#9a6700">{{ suspicious_count }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Cases -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="section-title"><i class="bi bi-hdd-stack me-2 text-primary"></i>Recent Disk Images</span>
+    <a href="{% url 'ingestion:register' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Register Image
+    </a>
+  </div>
+  <div class="card-body p-0">
+    {% if images %}
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Image Name</th>
+          <th>Size</th>
+          <th>Status</th>
+          <th>Hash</th>
+          <th>Registered</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for img in images %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:32px;height:32px;border-radius:6px;background:#f6f8fa;border:1px solid #e1e4e8;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="bi bi-hdd text-secondary" style="font-size:14px"></i>
+              </div>
+              <div>
+                <a href="{% url 'ingestion:image_detail' img.pk %}" class="text-decoration-none fw-semibold" style="color:#0969da">{{ img.name }}</a>
+                <div class="text-muted" style="font-size:11px">{{ img.file_size|filesizeformat }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-muted">{{ img.file_size|filesizeformat }}</td>
+          <td>
+            {% if img.status == 'completed' %}<span class="badge" style="background:#dafbe1;color:#1a7f37">Completed</span>
+            {% elif img.status == 'processing' %}<span class="badge" style="background:#ddf4ff;color:#0969da">Processing</span>
+            {% elif img.status == 'validating' %}<span class="badge" style="background:#ddf4ff;color:#0969da">Validating</span>
+            {% elif img.status == 'valid' %}<span class="badge" style="background:#f6f8fa;color:#57606a;border:1px solid #d0d7de">Ready</span>
+            {% elif img.status == 'invalid' or img.status == 'failed' %}<span class="badge" style="background:#ffebe9;color:#cf222e">{{ img.status|title }}</span>
+            {% else %}<span class="badge" style="background:#f6f8fa;color:#57606a">{{ img.status }}</span>{% endif %}
+          </td>
+          <td><code class="text-muted">{{ img.sha256_hash|truncatechars:16|default:"—" }}</code></td>
+          <td class="text-muted">{{ img.uploaded_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'ingestion:image_detail' img.pk %}" class="btn btn-sm btn-outline-primary" title="View">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if img.status == 'completed' %}
+              <a href="{% url 'analysis:forgery_results' img.pk %}" class="btn btn-sm btn-outline-danger" title="Forgery Results">
+                <i class="bi bi-shield-exclamation"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5">
+      <div style="width:64px;height:64px;border-radius:16px;background:#f6f8fa;border:1px solid #e1e4e8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <i class="bi bi-hdd-x" style="font-size:28px;color:#8c959f"></i>
+      </div>
+      <div class="fw-semibold mb-1">No disk images registered</div>
+      <div class="text-muted mb-3" style="font-size:13px">Register a disk image to begin forensic analysis.</div>
+      <a href="{% url 'ingestion:register' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Register First Image
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

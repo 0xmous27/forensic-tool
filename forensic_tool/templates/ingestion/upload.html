@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Upload Disk Image{% endblock %}
+{% block page_title %}Upload Disk Image{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card p-4">
+      <h5 class="fw-bold mb-1"><i class="bi bi-cloud-upload text-primary me-2"></i>Upload NTFS Disk Image</h5>
+      <p class="text-muted small mb-3">Supported formats: .img, .dd, .raw, .e01, .001, .vmdk</p>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Disk Image File</label>
+          <input type="file" name="disk_image" class="form-control" accept=".img,.dd,.raw,.e01,.001,.vmdk" required>
+          <div class="form-text">The original image will not be modified. Analysis is read-only.</div>
+        </div>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-upload me-1"></i> Upload and Validate
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card mt-3 p-3 bg-light border-0">
+      <h6 class="fw-semibold"><i class="bi bi-info-circle text-info me-1"></i>Evidence Integrity</h6>
+      <p class="small text-muted mb-0">
+        All disk images are processed in read-only mode. A SHA-256 hash is computed immediately
+        after upload to verify integrity throughout the investigation.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

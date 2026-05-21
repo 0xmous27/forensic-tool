@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}File Detail — {{ result.file_name }}{% endblock %}
+{% block page_title %}File Analysis: {{ result.file_name }}{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- Verdict Card -->
+  <div class="col-md-4">
+    <div class="card p-3 text-center
+      {% if result.classification == 'forged' %}border-danger
+      {% elif result.classification == 'suspicious' %}border-warning
+      {% else %}border-success{% endif %}">
+      <div class="fs-1 mb-2">
+        {% if result.classification == 'forged' %}
+          <i class="bi bi-x-circle-fill text-danger"></i>
+        {% elif result.classification == 'suspicious' %}
+          <i class="bi bi-exclamation-circle-fill text-warning"></i>
+        {% else %}
+          <i class="bi bi-check-circle-fill text-success"></i>
+        {% endif %}
+      </div>
+      <h5 class="fw-bold">
+        {% if result.classification == 'forged' %}FORGED
+        {% elif result.classification == 'suspicious' %}SUSPICIOUS
+        {% else %}GENUINE{% endif %}
+      </h5>
+      <div class="display-6 fw-bold
+        {% if result.forgery_score > 60 %}text-danger
+        {% elif result.forgery_score > 30 %}text-warning
+        {% else %}text-success{% endif %}">
+        {{ result.forgery_score|floatformat:1 }}<small class="fs-6">/100</small>
+      </div>
+      <div class="text-muted small mt-1">Forgery Score</div>
+      <div class="progress mt-2" style="height:10px;">
+        <div class="progress-bar
+          {% if result.forgery_score > 60 %}bg-danger
+          {% elif result.forgery_score > 30 %}bg-warning
+          {% else %}bg-success{% endif %}"
+          style="width:{{ result.forgery_score }}%"></div>
+      </div>
+    </div>
+
+    <!-- File Info -->
+    <div class="card mt-3 p-3">
+      <h6 class="fw-bold mb-2">File Information</h6>
+      <table class="table table-sm mb-0">
+        <tr><th>Name</th><td>{{ result.file_name }}</td></tr>
+        <tr><th>Path</th><td><small>{{ result.file_path }}</small></td></tr>
+        <tr><th>Anomalies</th><td>{{ result.anomalies|length }}</td></tr>
+        <tr><th>Analyzed</th><td>{{ result.analyzed_at|date:"Y-m-d H:i" }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Anomalies & Artifacts -->
+  <div class="col-md-8">
+    <!-- Anomalies -->
+    <div class="card mb-3">
+      <div class="card-header bg-white py-2">
+        <span class="fw-semibold"><i class="bi bi-bug text-danger me-1"></i>Detected Anomalies</span>
+      </div>
+      <div class="card-body">
+        {% if anomalies %}
+          {% for anomaly in anomalies %}
+          <div class="alert
+            {% if anomaly.severity == 'critical' %}alert-danger
+            {% elif anomaly.severity == 'high' %}alert-warning
+            {% else %}alert-info{% endif %} py-2 mb-2">
+            <div class="d-flex justify-content-between">
+              <strong>{{ anomaly.type }}</strong>
+              <span class="badge
+                {% if anomaly.severity == 'critical' %}bg-danger
+                {% elif anomaly.severity == 'high' %}bg-warning text-dark
+                {% else %}bg-info{% endif %}">
+                {{ anomaly.severity|upper }}
+              </span>
+            </div>
+            <div class="small mt-1">{{ anomaly.description }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted mb-0">No anomalies detected.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Artifacts -->
+    <div class="card mb-3">
+      <div class="card-header bg-white py-2">
+        <span class="fw-semibold"><i class="bi bi-layers me-1"></i>Artifact Timestamps</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr><th>Source</th><th>Born (B)</th><th>Modified (M)</th><th>Accessed (A)</th><th>Changed (C)</th></tr>
+          </thead>
+          <tbody>
+            {% for artifact in artifacts %}
+            <tr>
+              <td><span class="badge bg-primary">{{ artifact.source }}</span></td>
+              <td><small>{{ artifact.born_time|date:"Y-m-d H:i:s"|default:"—" }}</small></td>
+              <td><small>{{ artifact.modified_time|date:"Y-m-d H:i:s"|default:"—" }}</small></td>
+              <td><small>{{ artifact.accessed_time|date:"Y-m-d H:i:s"|default:"—" }}</small></td>
+              <td><small>{{ artifact.changed_time|date:"Y-m-d H:i:s"|default:"—" }}</small></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-muted text-center py-3">No artifacts found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Scoring Breakdown -->
+    {% if scoring_breakdown %}
+    <div class="card">
+      <div class="card-header bg-white py-2">
+        <span class="fw-semibold"><i class="bi bi-calculator me-1"></i>Scoring Breakdown</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr><th>Anomaly</th><th>Severity</th><th>Base Weight</th><th>Reliability</th><th>Contribution</th></tr>
+          </thead>
+          <tbody>
+            {% for key, item in scoring_breakdown.items %}
+            <tr>
+              <td><small>{{ item.type }}</small></td>
+              <td><span class="badge bg-secondary">{{ item.severity }}</span></td>
+              <td>{{ item.base_weight }}</td>
+              <td>{{ item.reliability_multiplier }}</td>
+              <td><strong>{{ item.contribution }}</strong></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- File Timeline -->
+<div class="card mt-3">
+  <div class="card-header bg-white py-2">
+    <span class="fw-semibold"><i class="bi bi-clock-history me-1"></i>File Timeline</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-light">
+        <tr><th>Timestamp (UTC)</th><th>Event</th><th>Source</th></tr>
+      </thead>
+      <tbody>
+        {% for entry in timeline %}
+        <tr>
+          <td><code>{{ entry.event_time|date:"Y-m-d H:i:s" }}</code></td>
+          <td>{{ entry.event_type|title }}</td>
+          <td><span class="badge bg-primary">{{ entry.source }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-muted text-center py-3">No timeline entries.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

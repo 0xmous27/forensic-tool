@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Confirm Delete{% endblock %}
+{% block page_title %}Delete Disk Image{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card p-4 text-center">
+      <i class="bi bi-trash3 text-danger fs-1 mb-3"></i>
+      <h5>Delete "{{ disk_image.name }}"?</h5>
+      <p class="text-muted">This will permanently delete the disk image and all associated artifacts, timeline entries, and results.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger me-2">Yes, Delete</button>
+        <a href="{% url 'ingestion:image_detail' disk_image.pk %}" class="btn btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

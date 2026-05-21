@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}About{% endblock %}
+{% block page_title %}About{% endblock %}
+
+{% block extra_css %}
+<style>
+  .about-wrap { margin: -1.5rem -1.5rem 0; }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative; min-height: 340px;
+    background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1600&q=80') center/cover no-repeat;
+    display: flex; align-items: center;
+  }
+  .hero::after {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(135deg,rgba(10,14,26,.88) 0%,rgba(15,52,96,.75) 100%);
+  }
+  .hero-body { position:relative; z-index:1; padding: 4rem 3rem; max-width: 760px; }
+  .hero-body .eyebrow {
+    font-size:.72rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+    color:#4a9eff; margin-bottom:.75rem;
+  }
+  .hero-body h1 { font-size:2.6rem; font-weight:800; color:#fff; line-height:1.2; }
+  .hero-body p  { margin-top:.9rem; font-size:1.05rem; color:rgba(255,255,255,.72); max-width:580px; }
+
+  /* ── Sections ── */
+  .section { padding: 4rem 3rem; }
+  .section-alt { background: #f8fafc; }
+  .section-dark { background: #0f1117; color:#cdd6f4; }
+  .section-title {
+    font-size:1.6rem; font-weight:800; color:#0f3460; margin-bottom:.4rem;
+  }
+  .section-dark .section-title { color:#4a9eff; }
+  .section-sub { color:#6c7086; font-size:.92rem; margin-bottom:2.5rem; }
+  .section-dark .section-sub { color:#6c7086; }
+  .divider {
+    width:48px; height:4px; border-radius:2px;
+    background:linear-gradient(90deg,#0f3460,#4a9eff);
+    margin:.6rem 0 1.5rem;
+  }
+
+  /* ── Story ── */
+  .story-text { font-size:1rem; line-height:1.9; color:#444; max-width:780px; }
+  .story-text strong { color:#0f3460; }
+
+  /* ── Mission / Vision ── */
+  .mv-card {
+    border:none; border-radius:16px; padding:2rem;
+    box-shadow:0 2px 16px rgba(0,0,0,.07);
+    height:100%;
+  }
+  .mv-card .mv-icon {
+    width:52px; height:52px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.4rem; margin-bottom:1rem;
+  }
+  .mv-card h5 { font-weight:700; font-size:1.1rem; margin-bottom:.6rem; }
+  .mv-card p  { color:#555; font-size:.92rem; line-height:1.75; margin:0; }
+
+  /* ── Features ── */
+  .feat-card {
+    border:none; border-radius:14px; padding:1.75rem;
+    background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.06);
+    height:100%; transition:transform .2s,box-shadow .2s;
+  }
+  .feat-card:hover { transform:translateY(-4px); box-shadow:0 8px 28px rgba(15,52,96,.12); }
+  .feat-icon {
+    width:48px; height:48px; border-radius:12px;
+    background:linear-gradient(135deg,#0f3460,#1a4a8a);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem; color:#4a9eff; margin-bottom:1rem;
+  }
+  .feat-card h6 { font-weight:700; color:#0f3460; margin-bottom:.4rem; }
+  .feat-card p  { font-size:.85rem; color:#666; margin:0; line-height:1.65; }
+
+  /* ── Team ── */
+  .team-card {
+    border:none; border-radius:16px; overflow:hidden;
+    box-shadow:0 2px 14px rgba(0,0,0,.08);
+    transition:transform .2s,box-shadow .2s;
+    background:#fff;
+  }
+  .team-card:hover { transform:translateY(-5px); box-shadow:0 10px 32px rgba(15,52,96,.14); }
+  .team-avatar {
+    width:80px; height:80px; border-radius:50%;
+    background:linear-gradient(135deg,#0f3460,#1a4a8a);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.8rem; color:#4a9eff; margin:0 auto 1rem;
+    border:3px solid #e8f0fe;
+  }
+  .team-avatar-img {
+    width:80px; height:80px; border-radius:50%;
+    object-fit:cover; margin:0 auto 1rem;
+    border:3px solid #e8f0fe; display:block;
+  }
+  .team-card .card-body { text-align:center; padding:1.75rem 1.25rem; }
+  .team-card h6 { font-weight:700; font-size:.97rem; color:#0f3460; margin-bottom:.2rem; }
+  .team-card .reg { font-size:.75rem; color:#4a9eff; font-weight:600; letter-spacing:.04em; margin-bottom:.4rem; }
+  .team-card .role-badge {
+    display:inline-block; font-size:.72rem; font-weight:600;
+    background:#e8f0fe; color:#0f3460; border-radius:20px;
+    padding:3px 10px; margin-bottom:.6rem;
+  }
+  .team-card p { font-size:.82rem; color:#666; margin:0; line-height:1.6; }
+  .supervisor-card {
+    border:2px solid #4a9eff; border-radius:16px; padding:2rem;
+    background:linear-gradient(135deg,#0f3460 0%,#16213e 100%);
+    color:#fff; text-align:center;
+  }
+  .supervisor-card .sv-icon {
+    width:72px; height:72px; border-radius:50%;
+    background:rgba(74,158,255,.15); border:2px solid #4a9eff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:2rem; color:#4a9eff; margin:0 auto 1rem;
+  }
+  .supervisor-card h5 { font-weight:800; font-size:1.15rem; }
+  .supervisor-card p  { color:rgba(255,255,255,.65); font-size:.88rem; margin:.3rem 0 0; }
+
+  /* ── Tech ── */
+  .tech-pill {
+    display:inline-flex; align-items:center; gap:8px;
+    background:#fff; border:1px solid #e0e7ef;
+    border-radius:10px; padding:.6rem 1.1rem;
+    font-size:.88rem; font-weight:600; color:#0f3460;
+    box-shadow:0 1px 6px rgba(0,0,0,.05);
+  }
+  .tech-pill i { font-size:1.1rem; color:#4a9eff; }
+
+  /* ── Footer ── */
+  .about-footer {
+    background:#0a0e1a; color:rgba(255,255,255,.45);
+    text-align:center; padding:2rem 1rem; font-size:.82rem;
+  }
+  .about-footer strong { color:rgba(255,255,255,.75); }
+
+  /* ── Animate on scroll ── */
+  .fade-up { opacity:0; transform:translateY(24px); transition:opacity .6s ease,transform .6s ease; }
+  .fade-up.visible { opacity:1; transform:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="about-wrap">
+
+  <!-- 1. HERO -->
+  <div class="hero">
+    <div class="hero-body">
+      <div class="eyebrow"><i class="bi bi-shield-lock-fill me-1"></i>Group 15 · UDOM · FYP 2025/2026</div>
+      <h1>About Our<br>Forensic Tool</h1>
+      <p>Developed to detect NTFS timestamp forgery using advanced digital forensic techniques — bringing scientific rigour to digital evidence investigation.</p>
+    </div>
+  </div>
+
+  <!-- 2. OUR STORY -->
+  <div class="section fade-up">
+    <div class="eyebrow" style="font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#4a9eff;margin-bottom:.5rem;">
+      <i class="bi bi-book me-1"></i>Our Story
+    </div>
+    <h2 class="section-title">Why We Built This</h2>
+    <div class="divider"></div>
+    <p class="story-text">
+      In digital forensics, <strong>timestamps are evidence</strong>. They tell investigators when a file was created, modified, or accessed — forming the backbone of any timeline reconstruction. But what happens when those timestamps are deliberately manipulated?
+    </p>
+    <p class="story-text mt-3">
+      NTFS timestamp forgery is a real and growing threat. Attackers use tools to alter file metadata, erasing their tracks and misleading investigators. Traditional forensic workflows often lack automated, cross-source correlation — leaving analysts to manually compare $MFT entries, USN journals, event logs, and registry hives.
+    </p>
+    <p class="story-text mt-3">
+      We built <strong>ForensicTool</strong> to close that gap. By automatically extracting artifacts from multiple NTFS sources and correlating them against each other, the system surfaces anomalies that would otherwise take hours to find — and assigns each file a <strong>forgery likelihood score</strong> backed by evidence.
+    </p>
+  </div>
+
+  <!-- 3. MISSION & VISION -->
+  <div class="section section-alt fade-up">
+    <div class="eyebrow" style="font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#4a9eff;margin-bottom:.5rem;">
+      <i class="bi bi-bullseye me-1"></i>Purpose
+    </div>
+    <h2 class="section-title">Mission &amp; Vision</h2>
+    <div class="divider"></div>
+    <div class="row g-4 mt-1">
+      <div class="col-md-6">
+        <div class="mv-card">
+          <div class="mv-icon" style="background:#e8f0fe;">
+            <i class="bi bi-rocket-takeoff-fill text-primary fs-4"></i>
+          </div>
+          <h5>Our Mission</h5>
+          <p>To provide digital forensic investigators with an automated, reliable, and scientifically grounded tool for detecting NTFS timestamp manipulation — reducing investigation time, minimising human error, and strengthening the integrity of digital evidence in legal proceedings.</p>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="mv-card">
+          <div class="mv-icon" style="background:#e8f7f0;">
+            <i class="bi bi-eye-fill text-success fs-4"></i>
+          </div>
+          <h5>Our Vision</h5>
+          <p>To evolve into a comprehensive open-source forensic platform that supports multiple file systems beyond NTFS, integrates machine learning for anomaly detection, and becomes a trusted reference tool for law enforcement agencies, cybersecurity firms, and academic researchers worldwide.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. FEATURES -->
+  <div class="section fade-up">
+    <div class="eyebrow" style="font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#4a9eff;margin-bottom:.5rem;">
+      <i class="bi bi-stars me-1"></i>Capabilities
+    </div>
+    <h2 class="section-title">Core Features</h2>
+    <div class="divider"></div>
+    <div class="row g-4 mt-1">
+      <div class="col-sm-6 col-lg-3">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-hdd-fill"></i></div>
+          <h6>NTFS Artifact Extraction</h6>
+          <p>Parses $MFT, $UsnJrnl, $LogFile, Windows Registry, and EVTX event logs from raw disk images — including EWF/E01 forensic formats.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-clock-history"></i></div>
+          <h6>Timeline Correlation</h6>
+          <p>Reconstructs a unified forensic timeline by cross-referencing timestamps from multiple artifact sources to detect inconsistencies.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-bar-chart-fill"></i></div>
+          <h6>Evidence Scoring</h6>
+          <p>Assigns each file a forgery likelihood score (0–100) based on the number and severity of detected timestamp anomalies.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+          <h6>Report Generation</h6>
+          <p>Produces court-ready PDF and HTML forensic reports including case metadata, SHA-256 integrity hash, findings, and verdict.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. TECHNOLOGIES -->
+  <div class="section section-alt fade-up">
+    <div class="eyebrow" style="font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#4a9eff;margin-bottom:.5rem;">
+      <i class="bi bi-cpu me-1"></i>Stack
+    </div>
+    <h2 class="section-title">Technologies Used</h2>
+    <div class="divider"></div>
+    <div class="d-flex flex-wrap gap-3 mt-3">
+      <div class="tech-pill"><i class="bi bi-filetype-py"></i> Python 3.13</div>
+      <div class="tech-pill"><i class="bi bi-layers-fill"></i> Django 5</div>
+      <div class="tech-pill"><i class="bi bi-database-fill"></i> SQLite</div>
+      <div class="tech-pill"><i class="bi bi-bootstrap-fill"></i> Bootstrap 5</div>
+      <div class="tech-pill"><i class="bi bi-file-binary-fill"></i> python-libewf</div>
+      <div class="tech-pill"><i class="bi bi-graph-up"></i> Plotly.js</div>
+      <div class="tech-pill"><i class="bi bi-file-pdf-fill"></i> ReportLab</div>
+      <div class="tech-pill"><i class="bi bi-shield-fill-check"></i> pytsk3 / dfVFS</div>
+    </div>
+  </div>
+
+  <!-- 6. TEAM -->
+  <div class="section section-dark fade-up">
+    <div class="eyebrow" style="font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#4a9eff;margin-bottom:.5rem;">
+      <i class="bi bi-people-fill me-1"></i>The Team
+    </div>
+    <h2 class="section-title">Meet the Developers</h2>
+    <div class="divider"></div>
+    <p class="section-sub">Department of Computer Science &amp; Engineering · University of Dodoma · Group 15</p>
+
+    <!-- Supervisor -->
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-5">
+        <div class="supervisor-card">
+          <div class="sv-icon"><i class="bi bi-person-badge-fill"></i></div>
+          <h5>Mr. Ona Nixon</h5>
+          <p>Project Supervisor</p>
+          <p class="mt-2" style="font-size:.8rem;color:rgba(255,255,255,.5);">Department of Computer Science &amp; Engineering, UDOM</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Members -->
+    <div class="row g-4">
+      {% with members=members %}
+      <div class="col-sm-6 col-lg-4">
+        <div class="team-card">
+          <div class="card-body">
+            <img src="{% static 'img/Mathias.jpeg' %}" alt="Mathias M. George" class="team-avatar-img">
+            <h6>Mathias M. George</h6>
+            <div class="reg">T22-03-07128</div>
+            <div class="role-badge">Project Lead &amp; Backend</div>
+            <p>Led system architecture and core NTFS artifact extraction pipeline development.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="team-card">
+          <div class="card-body">
+            <img src="{% static 'img/T22-03-08062.jpeg' %}" alt="Elifuraha S. Kiangi" class="team-avatar-img">
+            <h6>Elifuraha S. Kiangi</h6>
+            <div class="reg">T22-03-08062</div>
+            <div class="role-badge">Forensic Analysis Engine</div>
+            <p>Designed and implemented the timestamp correlation and anomaly detection algorithms.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="team-card">
+          <div class="card-body">
+            <img src="{% static 'img/T22-03-01712.jpeg' %}" alt="Sarafina W. Mgani" class="team-avatar-img">
+            <h6>Sarafina W. Mgani</h6>
+            <div class="reg">T22-03-01712</div>
+            <div class="role-badge">UI/UX &amp; Frontend</div>
+            <p>Designed the investigator interface, dashboard, and interactive forensic timeline views.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="team-card">
+          <div class="card-body">
+            <img src="{% static 'img/T22-03-10581.jpeg' %}" alt="Mughutari S. Mbwana" class="team-avatar-img">
+            <h6>Mughutari S. Mbwana</h6>
+            <div class="reg">T22-03-10581</div>
+            <div class="role-badge">Evidence Scoring &amp; Reports</div>
+            <p>Built the evidence scoring engine and PDF/HTML forensic report generation system.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="team-card">
+          <div class="card-body">
+            <img src="{% static 'img/T22-03-07117.png' %}" alt="Noel D. Kweka" class="team-avatar-img">
+            <h6>Noel D. Kweka</h6>
+            <div class="reg">T22-03-07117</div>
+            <div class="role-badge">Testing &amp; Admin Panel</div>
+            <p>Developed the admin panel, system logging, user management, and QA testing.</p>
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+
+  <!-- 7. FOOTER -->
+  <div class="about-footer">
+    <div><strong>ForensicTool</strong> — NTFS Timestamp Forgery Detector</div>
+    <div class="mt-1">Final Year Project · Group 15 · Department of Computer Science &amp; Engineering</div>
+    <div class="mt-1">University of Dodoma (UDOM) &copy; 2025/2026</div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "admin_custom/base.html" %}
+{% block title %}Edit Investigator{% endblock %}
+{% block page_title %}Edit Investigator{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'admin_users' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Investigators
+  </a>
+</div>
+
+<div class="card" style="max-width:520px">
+  <div class="card-header bg-white border-bottom py-3 px-4">
+    <h6 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit: {{ edit_user.username }}</h6>
+  </div>
+  <div class="card-body p-4">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label small fw-semibold">First Name</label>
+          <input type="text" name="first_name" class="form-control" value="{{ edit_user.first_name }}">
+        </div>
+        <div class="col-6">
+          <label class="form-label small fw-semibold">Last Name</label>
+          <input type="text" name="last_name" class="form-control" value="{{ edit_user.last_name }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">Investigator ID</label>
+          <input type="text" name="investigator_id" class="form-control font-monospace"
+                 value="{{ profile.investigator_id }}" placeholder="e.g. T22-03-07128">
+          <div class="form-text" style="font-size:.75rem">Official registration number from the institution.</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">Email</label>
+          <input type="email" name="email" class="form-control" value="{{ edit_user.email }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">New Password <span class="text-muted fw-normal">(leave blank to keep current)</span></label>
+          <input type="password" name="password" class="form-control" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check me-1"></i>Save Changes</button>
+        <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

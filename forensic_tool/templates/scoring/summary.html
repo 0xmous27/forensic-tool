@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Scoring Summary — {{ disk_image.name }}{% endblock %}
+{% block page_title %}Evidence Scoring Summary{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="card p-3 text-center"><div class="fs-3 fw-bold">{{ total }}</div><div class="text-muted small">Total Files</div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center border-danger"><div class="fs-3 fw-bold text-danger">{{ forged_count }}</div><div class="text-muted small">Forged</div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center border-warning"><div class="fs-3 fw-bold text-warning">{{ suspicious_count }}</div><div class="text-muted small">Suspicious</div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center border-success"><div class="fs-3 fw-bold text-success">{{ genuine_count }}</div><div class="text-muted small">Genuine</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <span class="section-title mb-0">Top Suspicious Files</span>
+    <a href="{% url 'reporting:report_index' disk_image.pk %}" class="btn btn-sm btn-outline-success">
+      <i class="bi bi-file-earmark-text me-1"></i>Generate Report
+    </a>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>File Name</th><th>Score</th><th>Classification</th><th>Anomalies</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for r in top_suspicious %}
+        <tr>
+          <td>{{ r.file_name|truncatechars:60 }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress" style="width:80px;height:8px;">
+                <div class="progress-bar {% if r.forgery_score > 60 %}bg-danger{% elif r.forgery_score > 30 %}bg-warning{% else %}bg-success{% endif %}"
+                     style="width:{{ r.forgery_score }}%"></div>
+              </div>
+              {{ r.forgery_score|floatformat:1 }}
+            </div>
+          </td>
+          <td>
+            {% if r.classification == 'forged' %}<span class="badge bg-danger">FORGED</span>
+            {% elif r.classification == 'suspicious' %}<span class="badge bg-warning text-dark">SUSPICIOUS</span>
+            {% else %}<span class="badge bg-success">GENUINE</span>{% endif %}
+          </td>
+          <td>{{ r.anomalies|length }}</td>
+          <td><a href="{% url 'analysis:file_detail' disk_image.pk r.pk %}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No results. Run analysis and scoring first.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

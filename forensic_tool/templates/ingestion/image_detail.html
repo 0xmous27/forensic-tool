@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% block title %}{{ disk_image.name }}{% endblock %}
+{% block page_title %}{{ disk_image.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .terminal-window {
+    background: #0d1117; border-radius: 0 0 8px 8px;
+    font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px;
+    color: #3fb950; padding: 12px 16px;
+    max-height: 280px; overflow-y: auto;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .terminal-line { line-height: 1.6; }
+  .terminal-line.err { color: #f85149; }
+  .terminal-line.warn { color: #d29922; }
+  .progress { height: 8px; border-radius: 4px; background: #e1e4e8; }
+  .progress-bar { transition: width .5s ease; border-radius: 4px; }
+  .meta-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f0f2f4; font-size: 13px; }
+  .meta-row:last-child { border-bottom: none; }
+  .meta-label { width: 110px; flex-shrink: 0; color: #57606a; font-weight: 500; }
+  .meta-value { color: #24292f; word-break: break-all; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if disk_image.status == 'invalid' %}
+<div class="alert alert-danger d-flex align-items-start mb-4">
+  <i class="bi bi-shield-x fs-4 me-3 flex-shrink-0 mt-1"></i>
+  <div>
+    <div class="fw-bold mb-1">Hash Verification Failed — Image Rejected</div>
+    <div class="mb-1">The computed hash does not match the expected value. This image cannot be used for forensic analysis.</div>
+    {% if disk_image.notes %}<code class="d-block mb-1" style="font-size:11px">{{ disk_image.notes }}</code>{% endif %}
+    <a href="{% url 'ingestion:register' %}" class="alert-link fw-semibold">Register a new image →</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+
+  <!-- ── Left: Image metadata ── -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-hdd text-primary"></i>
+        <span class="section-title">Image Details</span>
+        {% if is_ewf %}<span class="badge ms-auto" style="background:#ddf4ff;color:#0969da">EWF/E01</span>{% endif %}
+      </div>
+      <div class="card-body" style="padding:16px">
+        <div class="meta-row">
+          <div class="meta-label">Name</div>
+          <div class="meta-value fw-semibold">{{ disk_image.name }}</div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Path</div>
+          <div class="meta-value"><code style="font-size:11px">{{ disk_image.image_path }}</code></div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Size</div>
+          <div class="meta-value">{{ disk_image.file_size|filesizeformat }}</div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Status</div>
+          <div class="meta-value">
+            {% if disk_image.status == 'completed' %}
+              <span class="badge" style="background:#dafbe1;color:#1a7f37"><i class="bi bi-check-circle-fill me-1"></i>Completed</span>
+            {% elif disk_image.status == 'processing' %}
+              <span class="badge" style="background:#ddf4ff;color:#0969da" id="status-badge"><i class="bi bi-arrow-repeat me-1"></i>Processing</span>
+            {% elif disk_image.status == 'valid' %}
+              <span class="badge" style="background:#dafbe1;color:#1a7f37"><i class="bi bi-shield-check me-1"></i>Verified</span>
+            {% elif disk_image.status == 'validating' %}
+              <span class="badge" style="background:#ddf4ff;color:#0969da" id="status-badge"><i class="bi bi-hourglass-split me-1"></i>Verifying</span>
+            {% elif disk_image.status == 'invalid' or disk_image.status == 'failed' %}
+              <span class="badge" style="background:#ffebe9;color:#cf222e"><i class="bi bi-x-circle-fill me-1"></i>{{ disk_image.status|title }}</span>
+            {% else %}
+              <span class="badge" style="background:#f6f8fa;color:#57606a;border:1px solid #d0d7de">{{ disk_image.status }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">{{ disk_image.hash_algorithm|upper }}</div>
+          <div class="meta-value">
+            <code id="hash-display" style="font-size:10px;word-break:break-all">{{ disk_image.sha256_hash|default:"Computing..." }}</code>
+            {% if disk_image.status == 'validating' %}
+            <div id="hash-status" class="mt-1" style="font-size:11px;color:#0969da">
+              <span class="spinner-border spinner-border-sm me-1" style="width:10px;height:10px"></span>Verifying hash...
+            </div>
+            {% elif disk_image.status == 'valid' or disk_image.status == 'completed' %}
+            <div class="mt-1" style="font-size:11px;color:#1a7f37"><i class="bi bi-check-circle-fill me-1"></i>Integrity verified</div>
+            {% elif disk_image.status == 'invalid' %}
+            <div class="mt-1" style="font-size:11px;color:#cf222e"><i class="bi bi-x-circle-fill me-1"></i>Hash mismatch</div>
+            {% endif %}
+          </div>
+        </div>
+        {% if disk_image.notes %}
+        <div class="meta-row">
+          <div class="meta-label">Notes</div>
+          <div class="meta-value" style="font-size:11px;color:#57606a">{{ disk_image.notes }}</div>
+        </div>
+        {% endif %}
+        <div class="meta-row">
+          <div class="meta-label">Registered</div>
+          <div class="meta-value text-muted">{{ disk_image.uploaded_at|date:"Y-m-d H:i" }} UTC</div>
+        </div>
+        {% if disk_image.processed_at %}
+        <div class="meta-row">
+          <div class="meta-label">Processed</div>
+          <div class="meta-value text-muted">{{ disk_image.processed_at|date:"Y-m-d H:i" }} UTC</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Delete -->
+    <div class="mt-2 text-end">
+      <a href="{% url 'ingestion:delete_image' disk_image.pk %}" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Remove Registration
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Right: Workflow ── -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-list-check text-primary"></i>
+        <span class="section-title">Forensic Workflow</span>
+      </div>
+      <div class="card-body" style="padding:8px 18px">
+
+        <!-- Step 1 -->
+        <div class="step-item">
+          <div class="step-num {% if disk_image.status == 'completed' or disk_image.status == 'processing' %}done{% elif disk_image.status == 'valid' %}active{% else %}pending{% endif %}">
+            {% if disk_image.status == 'completed' %}<i class="bi bi-check-lg"></i>
+            {% elif disk_image.status == 'processing' %}<i class="bi bi-arrow-repeat"></i>
+            {% else %}1{% endif %}
+          </div>
+          <div class="flex-grow-1">
+            <div class="step-title">Extract Artifacts</div>
+            <div class="step-desc">Parse $MFT, $UsnJrnl, $LogFile, Registry, EVTX{% if is_ewf %} (EWF){% endif %}</div>
+            {% if disk_image.status == 'valid' %}
+            <form method="post" action="{% url 'ingestion:start_extraction' disk_image.pk %}" class="mt-2">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-play-fill me-1"></i>Start Extraction
+              </button>
+            </form>
+            {% elif disk_image.status == 'processing' %}
+            <div class="mt-2 d-flex align-items-center gap-2">
+              <div class="spinner-border spinner-border-sm text-primary" style="width:14px;height:14px"></div>
+              <span style="font-size:12px;color:#0969da" id="extraction-status">Extracting artifacts...</span>
+            </div>
+            {% elif disk_image.status == 'completed' %}
+            <div class="mt-1" style="font-size:12px;color:#1a7f37">
+              <i class="bi bi-check me-1"></i>{% if job %}{{ job.artifacts_extracted|default:"0" }} artifacts extracted{% else %}Completed{% endif %}
+            </div>
+            {% elif disk_image.status == 'registering' or disk_image.status == 'validating' %}
+            <div class="mt-1 text-muted" style="font-size:12px">Waiting for hash verification...</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-item">
+          <div class="step-num {% if has_analysis %}done{% elif disk_image.status == 'completed' %}active{% else %}pending{% endif %}">
+            {% if has_analysis %}<i class="bi bi-check-lg"></i>{% else %}2{% endif %}
+          </div>
+          <div class="flex-grow-1">
+            <div class="step-title">Correlation Analysis</div>
+            <div class="step-desc">Detect SI/FN mismatches, impossible timestamps, USN anomalies</div>
+            {% if disk_image.status == 'completed' and not has_analysis and disk_image.analysis_status != 'running' %}
+            <a href="{% url 'analysis:run_analysis' disk_image.pk %}" class="btn btn-sm mt-2" style="background:#ddf4ff;color:#0969da;border:1px solid #80ccff">
+              <i class="bi bi-search me-1"></i>Run Analysis
+            </a>
+            {% elif disk_image.analysis_status == 'running' %}
+            <div class="mt-2">
+              <div class="progress mb-1">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="analysis-bar"
+                     style="width:{{ disk_image.analysis_progress }}%;background:#0969da"></div>
+              </div>
+              <div class="d-flex justify-content-between" style="font-size:11px">
+                <span class="text-muted" id="analysis-label">{{ disk_image.analysis_label|default:"Running..." }}</span>
+                <span id="analysis-pct">{{ disk_image.analysis_progress }}%</span>
+              </div>
+            </div>
+            {% elif has_analysis %}
+            <div class="mt-1" style="font-size:12px;color:#1a7f37"><i class="bi bi-check me-1"></i>Analysis complete</div>
+            {% elif disk_image.status != 'completed' %}
+            <div class="mt-1 text-muted" style="font-size:12px">Complete extraction first</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-item">
+          <div class="step-num {% if has_scoring %}done{% elif has_analysis %}active{% else %}pending{% endif %}">
+            {% if has_scoring %}<i class="bi bi-check-lg"></i>{% else %}3{% endif %}
+          </div>
+          <div class="flex-grow-1">
+            <div class="step-title">Evidence Scoring</div>
+            <div class="step-desc">Compute forgery likelihood scores (0–100) per file</div>
+            {% if has_analysis and not has_scoring and disk_image.scoring_status != 'running' %}
+            <a href="{% url 'scoring:run_scoring' disk_image.pk %}" class="btn btn-sm mt-2" style="background:#ddf4ff;color:#0969da;border:1px solid #80ccff">
+              <i class="bi bi-bar-chart me-1"></i>Run Scoring
+            </a>
+            {% elif disk_image.scoring_status == 'running' %}
+            <div class="mt-2">
+              <div class="progress mb-1">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="scoring-bar"
+                     style="width:{{ disk_image.scoring_progress }}%;background:#0969da"></div>
+              </div>
+              <div class="d-flex justify-content-between" style="font-size:11px">
+                <span class="text-muted" id="scoring-label">{{ disk_image.scoring_label|default:"Running..." }}</span>
+                <span id="scoring-pct">{{ disk_image.scoring_progress }}%</span>
+              </div>
+            </div>
+            {% elif has_scoring %}
+            <div class="mt-1" style="font-size:12px;color:#1a7f37"><i class="bi bi-check me-1"></i>Scoring complete</div>
+            {% else %}
+            <div class="mt-1 text-muted" style="font-size:12px">Complete analysis first</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-item">
+          <div class="step-num {% if has_scoring %}active{% else %}pending{% endif %}">4</div>
+          <div class="flex-grow-1">
+            <div class="step-title">Generate Report</div>
+            <div class="step-desc">Export PDF or HTML forensic report with full findings</div>
+            {% if has_scoring %}
+            <a href="{% url 'reporting:report_index' disk_image.pk %}" class="btn btn-sm btn-success mt-2">
+              <i class="bi bi-file-earmark-text me-1"></i>Generate Report
+            </a>
+            {% else %}
+            <div class="mt-1 text-muted" style="font-size:12px">Complete scoring first</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- View Results — only after scoring -->
+    {% if has_scoring %}
+    <div class="card mt-3">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-grid text-primary"></i>
+        <span class="section-title">View Results</span>
+      </div>
+      <div class="card-body d-flex gap-2 flex-wrap" style="padding:14px 18px">
+        <a href="{% url 'analysis:timeline' disk_image.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-clock-history me-1"></i>Timeline
+        </a>
+        <a href="{% url 'analysis:forgery_results' disk_image.pk %}" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-shield-exclamation me-1"></i>Forgery Results
+        </a>
+        <a href="{% url 'scoring:summary' disk_image.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-graph-up me-1"></i>Scoring Summary
+        </a>
+        <a href="{% url 'reporting:download_pdf' disk_image.pk %}" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-file-pdf me-1"></i>PDF Report
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Progress bar — during processing/validating -->
+{% if disk_image.status == 'processing' or disk_image.status == 'validating' %}
+<div class="card mt-3" id="progress-card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="section-title"><i class="bi bi-activity text-primary me-2"></i>Processing Progress</span>
+    <span style="font-size:12px;color:#57606a" id="eta-label">Calculating...</span>
+  </div>
+  <div class="card-body" style="padding:14px 18px">
+    <div class="progress mb-2">
+      <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+           id="progress-bar" role="progressbar"
+           style="width:{% if job %}{{ job.progress_percent }}{% else %}0{% endif %}%">
+      </div>
+    </div>
+    <div class="d-flex justify-content-between" style="font-size:12px">
+      <span class="text-muted" id="step-label">{% if job %}{{ job.current_step_label|default:"Initialising..." }}{% else %}Initialising...{% endif %}</span>
+      <span class="fw-semibold" id="progress-pct">{% if job %}{{ job.progress_percent }}{% else %}0{% endif %}%</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Live terminal -->
+{% if disk_image.status == 'processing' or job and job.log %}
+<div class="card mt-3">
+  <div class="card-header d-flex align-items-center justify-content-between" style="background:#161b22;border-color:#30363d;border-radius:8px 8px 0 0">
+    <span style="color:#e6edf3;font-size:13px;font-weight:600"><i class="bi bi-terminal me-2" style="color:#58a6ff"></i>Processing Log</span>
+    <span id="terminal-status" style="font-size:11px">
+      {% if disk_image.status == 'processing' %}<span style="color:#3fb950">● LIVE</span>{% else %}<span style="color:#8b949e">Completed</span>{% endif %}
+    </span>
+  </div>
+  <div class="terminal-window" id="terminal-output">{% if job and job.log %}{{ job.log }}{% endif %}</div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if disk_image.status == 'processing' or disk_image.status == 'validating' %}
+<script>
+(function () {
+  const statusUrl = "{% url 'ingestion:extraction_status' disk_image.pk %}";
+  const isValidating = "{{ disk_image.status }}" === 'validating';
+  let lastLogLength = 0;
+
+  function formatEta(s) {
+    if (!s || s < 0) return '';
+    return s < 60 ? `~${s}s remaining` : `~${Math.ceil(s / 60)}m remaining`;
+  }
+
+  function appendLog(terminal, text) {
+    text.split('\n').forEach(line => {
+      if (!line.trim()) return;
+      const d = document.createElement('div');
+      d.className = 'terminal-line' +
+        (line.match(/error/i) ? ' err' : line.match(/warning/i) ? ' warn' : '');
+      d.textContent = '> ' + line;
+      terminal.appendChild(d);
+    });
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  function poll() {
+    fetch(statusUrl).then(r => r.json()).then(data => {
+      // Hash display
+      if (data.sha256_hash) {
+        const hd = document.getElementById('hash-display');
+        const hs = document.getElementById('hash-status');
+        if (hd) hd.textContent = data.sha256_hash;
+        if (hs) hs.innerHTML = data.image_status === 'valid'
+          ? '<i class="bi bi-check-circle-fill me-1"></i>Integrity verified'
+          : '<i class="bi bi-x-circle-fill me-1"></i>Hash mismatch';
+      }
+      // Progress
+      const pct = data.progress || 0;
+      const bar = document.getElementById('progress-bar');
+      if (bar) bar.style.width = pct + '%';
+      const pctEl = document.getElementById('progress-pct');
+      if (pctEl) pctEl.textContent = pct + '%';
+      const stepEl = document.getElementById('step-label');
+      if (stepEl) stepEl.textContent = data.current_step_label || '';
+      const etaEl = document.getElementById('eta-label');
+      if (etaEl) etaEl.textContent = formatEta(data.eta_seconds);
+      // Terminal
+      const term = document.getElementById('terminal-output');
+      if (term && data.log) {
+        const newText = data.log.slice(lastLogLength);
+        if (newText) { appendLog(term, newText); lastLogLength = data.log.length; }
+      }
+      // Extraction status
+      const exEl = document.getElementById('extraction-status');
+      if (exEl && data.current_step_label)
+        exEl.textContent = `${data.current_step_label} — ${data.artifacts_extracted} artifacts`;
+
+      const done = ['completed', 'valid'].includes(data.image_status) || data.status === 'completed';
+      const fail = ['failed', 'invalid'].includes(data.image_status) || data.status === 'failed';
+      if (done || fail) location.reload();
+      else setTimeout(poll, 2000);
+    }).catch(() => setTimeout(poll, 5000));
+  }
+
+  const term = document.getElementById('terminal-output');
+  if (term && term.textContent.trim()) {
+    lastLogLength = term.textContent.length;
+    term.scrollTop = term.scrollHeight;
+  }
+  setTimeout(poll, isValidating ? 1500 : 2000);
+})();
+</script>
+{% endif %}
+
+{% if disk_image.analysis_status == 'running' %}
+<script>
+(function () {
+  const url = "{% url 'analysis:analysis_status' disk_image.pk %}";
+  function poll() {
+    fetch(url).then(r => r.json()).then(data => {
+      const bar = document.getElementById('analysis-bar');
+      const lbl = document.getElementById('analysis-label');
+      const pct = document.getElementById('analysis-pct');
+      if (bar) bar.style.width = data.progress + '%';
+      if (lbl) lbl.textContent = data.label;
+      if (pct) pct.textContent = data.progress + '%';
+      if (data.status === 'completed' || data.status === 'failed') location.reload();
+      else setTimeout(poll, 2000);
+    }).catch(() => setTimeout(poll, 3000));
+  }
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endif %}
+
+{% if disk_image.scoring_status == 'running' %}
+<script>
+(function () {
+  const url = "{% url 'scoring:scoring_status' disk_image.pk %}";
+  function poll() {
+    fetch(url).then(r => r.json()).then(data => {
+      const bar = document.getElementById('scoring-bar');
+      const lbl = document.getElementById('scoring-label');
+      const pct = document.getElementById('scoring-pct');
+      if (bar) bar.style.width = data.progress + '%';
+      if (lbl) lbl.textContent = data.label;
+      if (pct) pct.textContent = data.progress + '%';
+      if (data.status === 'completed' || data.status === 'failed') location.reload();
+      else setTimeout(poll, 2000);
+    }).catch(() => setTimeout(poll, 3000));
+  }
+  setTimeout(poll, 2000);
+})();
+</script>
+{% endif %}
+{% endblock %}

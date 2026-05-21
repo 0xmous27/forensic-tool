@@ -1,0 +1,39 @@
+﻿Created By AccessData® FTK® Imager 4.5.0.3 
+
+Case Information: 
+Acquired using: ADI4.5.0.3
+Case Number: Q
+Evidence Number: W
+Unique description: E
+Examiner: R
+Notes: T
+
+--------------------------------------------------------------
+
+Information for C:\Users\altum\Videos\Captures\FORENSICS:
+
+Physical Evidentiary Item (Source) Information:
+[Device Info]
+ Source Type: Logical
+[Drive Geometry]
+ Bytes per Sector: 512
+ Sector Count: 10,588,160
+[Physical Drive Information]
+ Removable drive: False
+ Source data size: 5170 MB
+ Sector count:    10588160
+[Computed Hashes]
+ MD5 checksum:    6e92367cbd4c907c5a31cf6f4d2c2a16
+ SHA1 checksum:   7d8db107f97ad04052081bf1681f3533dc9cc3d1
+
+Image Information:
+ Acquisition started:   Sat May  2 14:55:43 2026
+ Acquisition finished:  Sat May  2 14:57:17 2026
+ Segment list:
+  C:\Users\altum\Videos\Captures\FORENSICS.001
+
+Image Verification Results:
+ Verification started:  Sat May  2 14:57:18 2026
+ Verification finished: Sat May  2 14:57:48 2026
+ MD5 checksum:    6e92367cbd4c907c5a31cf6f4d2c2a16 : verified
+ SHA1 checksum:   7d8db107f97ad04052081bf1681f3533dc9cc3d1 : verified

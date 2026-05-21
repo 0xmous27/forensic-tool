@@ -1,0 +1,100 @@
+{% extends "admin_custom/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h5 class="fw-bold mb-0">Welcome back, {{ request.user.get_full_name|default:request.user.username }} 👋</h5>
+  <small class="text-muted">Here's what's happening in your ForensicTool system.</small>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card p-3">
+      <div class="stat-label">Total Investigators</div>
+      <div class="stat-num text-primary">{{ total_investigators }}</div>
+      <div class="mt-2 small text-muted"><i class="bi bi-person-plus me-1"></i>{{ new_users_this_week }} new this week</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card green p-3">
+      <div class="stat-label">Active Investigators</div>
+      <div class="stat-num" style="color:#27ae60">{{ active_investigators }}</div>
+      <div class="mt-2 small text-muted"><i class="bi bi-check-circle me-1"></i>Currently enabled</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card orange p-3">
+      <div class="stat-label">Warnings (Logs)</div>
+      <div class="stat-num" style="color:#e67e22">{{ warning_logs }}</div>
+      <div class="mt-2 small text-muted"><i class="bi bi-exclamation-triangle me-1"></i>{{ logs_this_week }} logs this week</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card red p-3">
+      <div class="stat-label">Errors / Critical</div>
+      <div class="stat-num" style="color:#c0392b">{{ error_logs }}</div>
+      <div class="mt-2 small text-muted"><i class="bi bi-bug me-1"></i>Needs attention</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Recent Investigators -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between py-2 px-3 bg-white border-bottom">
+        <span class="fw-semibold small"><i class="bi bi-people me-1 text-primary"></i>Recent Investigators</span>
+        <a href="{% url 'admin_users' %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.78rem;">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr><th>Username</th><th>Name</th><th>Status</th><th>Joined</th></tr></thead>
+          <tbody>
+            {% for u in recent_investigators %}
+            <tr>
+              <td class="fw-semibold">{{ u.username }}</td>
+              <td>{{ u.get_full_name|default:"—" }}</td>
+              <td>
+                {% if u.is_active %}<span class="badge badge-active">Active</span>
+                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+              </td>
+              <td class="text-muted">{{ u.date_joined|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No investigators yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Logs -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between py-2 px-3 bg-white border-bottom">
+        <span class="fw-semibold small"><i class="bi bi-journal-text me-1 text-primary"></i>Recent System Logs</span>
+        <a href="{% url 'admin_logs' %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.78rem;">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr><th>Time</th><th>Level</th><th>Message</th></tr></thead>
+          <tbody>
+            {% for log in recent_logs %}
+            <tr class="log-{{ log.level }}">
+              <td class="text-muted" style="font-size:.78rem;white-space:nowrap">{{ log.created_at|date:"M d H:i" }}</td>
+              <td><span class="badge badge-{{ log.level }}">{{ log.level }}</span></td>
+              <td style="font-size:.8rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ log.message }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-3">No logs yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
