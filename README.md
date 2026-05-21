@@ -44,7 +44,7 @@ This tool is a web-based automated digital forensic system that detects timestam
 ### Quick Setup
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/0xmous27/forensic-tool.git
 cd forensic_tool
 bash setup.sh
 ```
